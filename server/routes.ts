@@ -84,6 +84,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/tts", async (req, res) => {
+    try {
+      const { text } = req.body;
+
+      if (!text || typeof text !== "string") {
+        return res.status(400).json({ error: "Text is required" });
+      }
+
+      const apiKey = process.env.MURF_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "MURF_API_KEY not configured" });
+      }
+
+      const response = await fetch("https://api.murf.ai/v1/speech/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": apiKey,
+        },
+        body: JSON.stringify({
+          text,
+          voiceId: "charles",
+          modelVersion: "GEN2",
+          format: "MP3",
+          encodeAsBase64: true,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return res.status(response.status).json({
+          error: errorData.error || "Failed to generate speech",
+        });
+      }
+
+      const data = await response.json();
+      res.json({ audioBase64: data.encoded_audio });
+    } catch (error) {
+      console.error("TTS API error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.post("/api/chat", async (req, res) => {
     try {
       const { messages } = req.body;
