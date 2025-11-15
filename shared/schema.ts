@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { sql, relations } from "drizzle-orm";
 import { pgTable, text, varchar, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -33,13 +33,28 @@ export type ChatSession = typeof chatSessions.$inferSelect;
 
 export const messages = pgTable("messages", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  chatSessionId: varchar("chat_session_id").notNull(),
+  chatSessionId: varchar("chat_session_id")
+    .notNull()
+    .references(() => chatSessions.id, { onDelete: "cascade" }),
   role: text("role").notNull(),
   content: text("content").notNull(),
 });
 
-export const insertMessageSchema = createInsertSchema(messages).omit({
-  id: true,
+export const chatSessionsRelations = relations(chatSessions, ({ many }) => ({
+  messages: many(messages),
+}));
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  chatSession: one(chatSessions, {
+    fields: [messages.chatSessionId],
+    references: [chatSessions.id],
+  }),
+}));
+
+export const insertMessageSchema = createInsertSchema(messages).pick({
+  chatSessionId: true,
+  role: true,
+  content: true,
 });
 
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
