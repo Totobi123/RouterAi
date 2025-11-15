@@ -71,7 +71,11 @@ export class DbStorage implements IStorage {
   }
 
   async getMessagesBySessionId(sessionId: string): Promise<Message[]> {
-    return db.select().from(messages).where(eq(messages.chatSessionId, sessionId));
+    return db
+      .select()
+      .from(messages)
+      .where(eq(messages.chatSessionId, sessionId))
+      .orderBy(messages.id);
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
