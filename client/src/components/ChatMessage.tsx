@@ -3,6 +3,8 @@ import { Bot, User, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -88,7 +90,28 @@ export default function ChatMessage({ role, content }: ChatMessageProps) {
           }`}
           data-testid={`content-${role}`}
         >
-          <p className="text-base whitespace-pre-wrap break-words">{content}</p>
+          <div className="prose prose-sm dark:prose-invert max-w-none">
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
+              components={{
+                p: ({node, ...props}) => <p className="text-base mb-2 last:mb-0" {...props} />,
+                strong: ({node, ...props}) => <strong className="font-bold" {...props} />,
+                em: ({node, ...props}) => <em className="italic" {...props} />,
+                ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-2" {...props} />,
+                ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2" {...props} />,
+                li: ({node, ...props}) => <li className="mb-1" {...props} />,
+                code: ({node, className, children, ...props}: any) => {
+                  const match = /language-(\w+)/.exec(className || '');
+                  const inline = !match;
+                  return inline ? 
+                    <code className="bg-muted px-1 py-0.5 rounded text-sm" {...props}>{children}</code> : 
+                    <code className="block bg-muted p-2 rounded text-sm overflow-x-auto" {...props}>{children}</code>;
+                },
+              }}
+            >
+              {content}
+            </ReactMarkdown>
+          </div>
         </div>
         
         {!isUser && (

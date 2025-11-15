@@ -113,10 +113,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        return res.status(response.status).json({
-          error: errorData.error || "Failed to generate speech",
-        });
+        const errorText = await response.text();
+        console.error("Murf API error:", response.status, errorText);
+        try {
+          const errorData = JSON.parse(errorText);
+          return res.status(response.status).json({
+            error: errorData.error || errorData.message || "Failed to generate speech",
+          });
+        } catch {
+          return res.status(response.status).json({
+            error: errorText || "Failed to generate speech",
+          });
+        }
       }
 
       const data = await response.json();
