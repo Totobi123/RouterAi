@@ -105,7 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         body: JSON.stringify({
           text,
-          voiceId: "en-US-natalie",
+          voiceId: "Charles",
           modelVersion: "GEN2",
           format: "MP3",
           sampleRate: 44100,
