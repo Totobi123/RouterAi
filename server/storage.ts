@@ -5,12 +5,8 @@ import {
   type InsertChatSession,
   type Message,
   type InsertMessage,
-  users,
-  chatSessions,
-  messages,
 } from "@shared/schema";
-import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { randomUUID } from "crypto";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -27,66 +23,75 @@ export interface IStorage {
   createMessages(messagesList: InsertMessage[]): Promise<Message[]>;
 }
 
-export class DbStorage implements IStorage {
+export class MemStorage implements IStorage {
+  private users = new Map<string, User>();
+  private chatSessions = new Map<string, ChatSession>();
+  private messages = new Map<number, Message>();
+  private messageIdCounter = 1;
+
   async getUser(id: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.id, id));
-    return result[0];
+    return this.users.get(id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const result = await db
-      .select()
-      .from(users)
-      .where(eq(users.username, username));
-    return result[0];
+    return Array.from(this.users.values()).find(u => u.username === username);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(insertUser).returning();
-    return result[0];
+    const user: User = {
+      id: randomUUID(),
+      ...insertUser,
+    };
+    this.users.set(user.id, user);
+    return user;
   }
 
   async listChatSessions(): Promise<ChatSession[]> {
-    return db
-      .select()
-      .from(chatSessions)
-      .orderBy(desc(chatSessions.createdAt));
+    return Array.from(this.chatSessions.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   }
 
   async getChatSession(id: string): Promise<ChatSession | undefined> {
-    const result = await db
-      .select()
-      .from(chatSessions)
-      .where(eq(chatSessions.id, id));
-    return result[0];
+    return this.chatSessions.get(id);
   }
 
   async createChatSession(session: InsertChatSession): Promise<ChatSession> {
-    const result = await db.insert(chatSessions).values(session).returning();
-    return result[0];
+    const chatSession: ChatSession = {
+      id: randomUUID(),
+      createdAt: new Date(),
+      ...session,
+    };
+    this.chatSessions.set(chatSession.id, chatSession);
+    return chatSession;
   }
 
   async deleteChatSession(id: string): Promise<void> {
-    await db.delete(chatSessions).where(eq(chatSessions.id, id));
+    this.chatSessions.delete(id);
+    const sessionMessages = Array.from(this.messages.entries())
+      .filter(([_, msg]) => msg.chatSessionId === id);
+    sessionMessages.forEach(([msgId]) => this.messages.delete(msgId));
   }
 
   async getMessagesBySessionId(sessionId: string): Promise<Message[]> {
-    return db
-      .select()
-      .from(messages)
-      .where(eq(messages.chatSessionId, sessionId))
-      .orderBy(messages.id);
+    return Array.from(this.messages.values())
+      .filter(msg => msg.chatSessionId === sessionId)
+      .sort((a, b) => a.id - b.id);
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
-    const result = await db.insert(messages).values(message).returning();
-    return result[0];
+    const msg: Message = {
+      id: this.messageIdCounter++,
+      ...message,
+    };
+    this.messages.set(msg.id, msg);
+    return msg;
   }
 
   async createMessages(messagesList: InsertMessage[]): Promise<Message[]> {
     if (messagesList.length === 0) return [];
-    return db.insert(messages).values(messagesList).returning();
+    return Promise.all(messagesList.map(msg => this.createMessage(msg)));
   }
 }
 
-export const storage = new DbStorage();
+export const storage = new MemStorage();
