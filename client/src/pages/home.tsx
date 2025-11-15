@@ -106,7 +106,8 @@ export default function Home() {
             id: -Date.now(),
             chatSessionId: sessionId,
             role: "user",
-            content
+            content,
+            audioBase64: null
           }
         ]
       );
@@ -126,13 +127,15 @@ export default function Home() {
               id: -Date.now() - 1,
               chatSessionId: sessionId,
               role: data.userMessage.role,
-              content: data.userMessage.content
+              content: data.userMessage.content,
+              audioBase64: null
             },
             { 
               id: -Date.now() - 2,
               chatSessionId: sessionId,
               role: data.aiMessage.role,
-              content: data.aiMessage.content
+              content: data.aiMessage.content,
+              audioBase64: null
             }
           ];
         }
@@ -230,11 +233,14 @@ export default function Home() {
           ) : (
             <div className="flex-1 overflow-y-auto" data-testid="messages-container">
               <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-                {messages.map((message, index) => (
+                {dbMessages.map((message) => (
                   <ChatMessage
-                    key={index}
-                    role={message.role}
+                    key={message.id}
+                    messageId={message.id}
+                    role={message.role as "user" | "assistant"}
                     content={message.content}
+                    audioBase64={message.audioBase64}
+                    sessionId={currentSessionId}
                   />
                 ))}
                 {isLoading && <LoadingIndicator />}

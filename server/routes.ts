@@ -86,7 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/tts", async (req, res) => {
     try {
-      const { text } = req.body;
+      const { text, messageId } = req.body;
 
       if (!text || typeof text !== "string") {
         return res.status(400).json({ error: "Text is required" });
@@ -105,9 +105,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         body: JSON.stringify({
           text,
-          voiceId: "charles",
+          voiceId: "en-US-natalie",
           modelVersion: "GEN2",
           format: "MP3",
+          sampleRate: 44100,
           encodeAsBase64: true,
         }),
       });
@@ -128,7 +129,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const data = await response.json();
-      res.json({ audioBase64: data.encoded_audio });
+      console.log("Murf API response keys:", Object.keys(data));
+      
+      if (!data.encodedAudio) {
+        console.error("No encodedAudio in response:", data);
+        return res.status(500).json({ error: "No audio data received from Murf API" });
+      }
+      
+      if (messageId) {
+        await storage.updateMessageAudio(messageId, data.encodedAudio);
+      }
+      
+      res.json({ audioBase64: data.encodedAudio });
     } catch (error) {
       console.error("TTS API error:", error);
       res.status(500).json({ error: "Internal server error" });

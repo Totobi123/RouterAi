@@ -21,6 +21,7 @@ export interface IStorage {
   getMessagesBySessionId(sessionId: string): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
   createMessages(messagesList: InsertMessage[]): Promise<Message[]>;
+  updateMessageAudio(messageId: number, audioBase64: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -83,6 +84,7 @@ export class MemStorage implements IStorage {
     const msg: Message = {
       id: this.messageIdCounter++,
       ...message,
+      audioBase64: message.audioBase64 ?? null,
     };
     this.messages.set(msg.id, msg);
     return msg;
@@ -91,6 +93,14 @@ export class MemStorage implements IStorage {
   async createMessages(messagesList: InsertMessage[]): Promise<Message[]> {
     if (messagesList.length === 0) return [];
     return Promise.all(messagesList.map(msg => this.createMessage(msg)));
+  }
+
+  async updateMessageAudio(messageId: number, audioBase64: string): Promise<void> {
+    const message = this.messages.get(messageId);
+    if (message) {
+      message.audioBase64 = audioBase64;
+      this.messages.set(messageId, message);
+    }
   }
 }
 

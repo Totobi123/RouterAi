@@ -38,6 +38,7 @@ export const messages = pgTable("messages", {
     .references(() => chatSessions.id, { onDelete: "cascade" }),
   role: text("role").notNull(),
   content: text("content").notNull(),
+  audioBase64: text("audio_base64"),
 });
 
 export const chatSessionsRelations = relations(chatSessions, ({ many }) => ({
@@ -55,7 +56,8 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   chatSessionId: true,
   role: true,
   content: true,
-});
+  audioBase64: true,
+}).partial({ audioBase64: true });
 
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Message = typeof messages.$inferSelect;

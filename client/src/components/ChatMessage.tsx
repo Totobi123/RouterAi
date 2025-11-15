@@ -9,11 +9,15 @@ import remarkGfm from "remark-gfm";
 interface ChatMessageProps {
   role: "user" | "assistant";
   content: string;
+  messageId?: number;
+  audioBase64?: string | null;
+  sessionId?: string | null;
 }
 
-export default function ChatMessage({ role, content }: ChatMessageProps) {
+export default function ChatMessage({ role, content, messageId, audioBase64, sessionId }: ChatMessageProps) {
   const isUser = role === "user";
   const [isPlaying, setIsPlaying] = useState(false);
+  const [cachedAudio, setCachedAudio] = useState(audioBase64);
   const { toast } = useToast();
 
   const handlePlayAudio = async () => {
@@ -21,21 +25,35 @@ export default function ChatMessage({ role, content }: ChatMessageProps) {
 
     setIsPlaying(true);
     try {
-      const response = await fetch("/api/tts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text: content }),
-      });
+      let audioData = cachedAudio;
+      
+      if (!audioData) {
+        const response = await fetch("/api/tts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ 
+            text: content,
+            messageId: messageId
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to generate audio");
+        if (!response.ok) {
+          throw new Error("Failed to generate audio");
+        }
+
+        const data = await response.json();
+        audioData = data.audioBase64;
+        setCachedAudio(audioData);
       }
 
-      const data = await response.json();
+      if (!audioData) {
+        throw new Error("No audio data available");
+      }
+
       const audioBlob = await fetch(
-        `data:audio/mp3;base64,${data.audioBase64}`
+        `data:audio/mp3;base64,${audioData}`
       ).then((r) => r.blob());
       
       const audioUrl = URL.createObjectURL(audioBlob);
