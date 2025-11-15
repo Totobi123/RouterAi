@@ -1,8 +1,89 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { insertChatSessionSchema, insertMessageSchema } from "@shared/schema";
+import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  app.get("/api/chat-sessions", async (req, res) => {
+    try {
+      const sessions = await storage.listChatSessions();
+      res.json(sessions);
+    } catch (error) {
+      console.error("List chat sessions error:", error);
+      res.status(500).json({ error: "Failed to list chat sessions" });
+    }
+  });
+
+  app.post("/api/chat-sessions", async (req, res) => {
+    try {
+      const validated = insertChatSessionSchema.parse(req.body);
+      const session = await storage.createChatSession(validated);
+      res.json(session);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid session data", details: error.errors });
+      }
+      console.error("Create chat session error:", error);
+      res.status(500).json({ error: "Failed to create chat session" });
+    }
+  });
+
+  app.get("/api/chat-sessions/:id", async (req, res) => {
+    try {
+      const session = await storage.getChatSession(req.params.id);
+      if (!session) {
+        return res.status(404).json({ error: "Chat session not found" });
+      }
+      res.json(session);
+    } catch (error) {
+      console.error("Get chat session error:", error);
+      res.status(500).json({ error: "Failed to get chat session" });
+    }
+  });
+
+  app.delete("/api/chat-sessions/:id", async (req, res) => {
+    try {
+      await storage.deleteChatSession(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete chat session error:", error);
+      res.status(500).json({ error: "Failed to delete chat session" });
+    }
+  });
+
+  app.get("/api/chat-sessions/:id/messages", async (req, res) => {
+    try {
+      const messages = await storage.getMessagesBySessionId(req.params.id);
+      res.json(messages);
+    } catch (error) {
+      console.error("Get messages error:", error);
+      res.status(500).json({ error: "Failed to get messages" });
+    }
+  });
+
+  app.post("/api/chat-sessions/:id/messages", async (req, res) => {
+    try {
+      const { messages } = req.body;
+      if (!Array.isArray(messages)) {
+        return res.status(400).json({ error: "Messages must be an array" });
+      }
+      
+      const validated = messages.map((msg) => 
+        insertMessageSchema.parse({ ...msg, chatSessionId: req.params.id })
+      );
+      
+      const createdMessages = await storage.createMessages(validated);
+      res.json(createdMessages);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid message data", details: error.errors });
+      }
+      console.error("Create messages error:", error);
+      res.status(500).json({ error: "Failed to create messages" });
+    }
+  });
+
   app.post("/api/chat", async (req, res) => {
     try {
       const { messages } = req.body;
