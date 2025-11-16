@@ -22,10 +22,10 @@ export default function EmptyState({ onSuggestionClick }: EmptyStateProps) {
         
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold text-foreground">
-            Chat with AI
+            Chat with Sone
           </h1>
           <p className="text-muted-foreground">
-            Powered by DeepSeek via OpenRouter. Ask me anything!
+            Darkest gpt made by Genx !
           </p>
         </div>
 
