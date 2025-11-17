@@ -6,12 +6,14 @@ import ChatInput from "@/components/ChatInput";
 import LoadingIndicator from "@/components/LoadingIndicator";
 import EmptyState from "@/components/EmptyState";
 import ThemeToggle from "@/components/ThemeToggle";
+import ScrollToTop from "@/components/ScrollToTop";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Message as DbMessage } from "@shared/schema";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Message {
   role: "user" | "assistant";
@@ -21,7 +23,9 @@ interface Message {
 export default function Home() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const { data: dbMessages = [] } = useQuery<DbMessage[]>({
@@ -63,9 +67,29 @@ export default function Home() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const scrollToTop = () => {
+    messagesContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const scrollTop = container.scrollTop;
+      const scrollHeight = container.scrollHeight;
+      const clientHeight = container.clientHeight;
+      
+      setShowScrollTop(scrollTop > 200 && scrollHeight > clientHeight + 100);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [messages]);
 
   const sendMessageMutation = useMutation({
     mutationFn: async ({ content, sessionId }: { content: string; sessionId: string }) => {
@@ -207,31 +231,50 @@ export default function Home() {
         onNewChat={handleNewChat}
       />
       <div className="flex flex-col flex-1">
-        <header className="flex items-center justify-between px-6 py-4 border-b" data-testid="header">
+        <motion.header 
+          className="flex items-center justify-between px-6 py-4 border-b" 
+          data-testid="header"
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
           <div className="flex items-center gap-2">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
             <h1 className="text-xl font-semibold">AI Chat</h1>
           </div>
           <div className="flex items-center gap-2">
-            {messages.length > 0 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleNewChat}
-                data-testid="button-clear"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            )}
+            <AnimatePresence>
+              {messages.length > 0 && (
+                <motion.div
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 200 }}
+                >
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleNewChat}
+                    data-testid="button-clear"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
             <ThemeToggle />
           </div>
-        </header>
+        </motion.header>
 
-        <main className="flex-1 overflow-hidden flex flex-col">
+        <main className="flex-1 overflow-hidden flex flex-col relative">
           {messages.length === 0 && !isLoading ? (
             <EmptyState onSuggestionClick={handleSuggestionClick} />
           ) : (
-            <div className="flex-1 overflow-y-auto" data-testid="messages-container">
+            <div 
+              ref={messagesContainerRef}
+              className="flex-1 overflow-y-auto scroll-smooth" 
+              data-testid="messages-container"
+            >
               <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
                 {dbMessages.map((message) => (
                   <ChatMessage
@@ -249,6 +292,7 @@ export default function Home() {
             </div>
           )}
 
+          <ScrollToTop show={showScrollTop} onClick={scrollToTop} />
           <ChatInput onSend={handleSend} disabled={isLoading} />
         </main>
       </div>
