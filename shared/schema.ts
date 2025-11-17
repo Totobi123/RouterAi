@@ -61,3 +61,18 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
 
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Message = typeof messages.$inferSelect;
+
+export const settings = pgTable("settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  openrouterApiKey: text("openrouter_api_key"),
+  murfApiKey: text("murf_api_key"),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const insertSettingsSchema = createInsertSchema(settings).pick({
+  openrouterApiKey: true,
+  murfApiKey: true,
+}).partial();
+
+export type InsertSettings = z.infer<typeof insertSettingsSchema>;
+export type Settings = typeof settings.$inferSelect;

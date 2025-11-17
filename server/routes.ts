@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertChatSessionSchema, insertMessageSchema } from "@shared/schema";
+import { insertChatSessionSchema, insertMessageSchema, insertSettingsSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -84,6 +84,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/settings", async (req, res) => {
+    try {
+      const settings = await storage.getSettings();
+      res.json({
+        hasOpenrouterKey: !!settings?.openrouterApiKey,
+        hasMurfKey: !!settings?.murfApiKey,
+      });
+    } catch (error) {
+      console.error("Get settings error:", error);
+      res.status(500).json({ error: "Failed to get settings" });
+    }
+  });
+
+  app.post("/api/settings", async (req, res) => {
+    try {
+      const validated = insertSettingsSchema.parse(req.body);
+      const settings = await storage.upsertSettings(validated);
+      res.json({ success: true, settings });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid settings data", details: error.errors });
+      }
+      console.error("Update settings error:", error);
+      res.status(500).json({ error: "Failed to update settings" });
+    }
+  });
+
   app.post("/api/tts", async (req, res) => {
     try {
       const { text, messageId } = req.body;
@@ -92,9 +119,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Text is required" });
       }
 
-      const apiKey = process.env.MURF_API_KEY;
+      const userSettings = await storage.getSettings();
+      const apiKey = userSettings?.murfApiKey || process.env.MURF_API_KEY;
+      
       if (!apiKey) {
-        return res.status(500).json({ error: "MURF_API_KEY not configured" });
+        return res.status(500).json({ error: "Murf API key not configured. Please add your API key in Settings." });
       }
 
       const response = await fetch("https://api.murf.ai/v1/speech/generate", {
@@ -171,10 +200,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid message format or role" });
       }
 
-      const apiKey = process.env.OPENROUTER_API_KEY;
+      const userSettings = await storage.getSettings();
+      const apiKey = userSettings?.openrouterApiKey || process.env.OPENROUTER_API_KEY;
+      
       if (!apiKey) {
         return res.status(500).json({ 
-          error: "OPENROUTER_API_KEY not found in environment variables. Please create a .env file with your API key." 
+          error: "OpenRouter API key not configured. Please add your API key in Settings or contact the administrator." 
         });
       }
 

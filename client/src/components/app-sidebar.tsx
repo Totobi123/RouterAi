@@ -1,4 +1,4 @@
-import { MessageSquare, Plus, Trash2 } from "lucide-react";
+import { MessageSquare, Plus, Trash2, Settings } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -9,7 +9,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -23,6 +25,7 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ currentSessionId, onSessionSelect, onNewChat }: AppSidebarProps) {
+  const [location] = useLocation();
   const { data: sessions = [], isLoading } = useQuery<ChatSession[]>({
     queryKey: ["/api/chat-sessions"],
   });
@@ -128,6 +131,18 @@ export function AppSidebar({ currentSessionId, onSessionSelect, onNewChat }: App
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter className="p-4">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={location === "/settings"}>
+              <Link href="/settings" data-testid="link-settings">
+                <Settings className="w-4 h-4" />
+                <span>Settings</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }
