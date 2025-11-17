@@ -1,0 +1,6 @@
+# Netlify Redirects
+# Redirect API calls to serverless function
+/api/*  /.netlify/functions/api/:splat  200
+
+# SPA fallback for React Router (wouter)
+/*      /index.html                     200

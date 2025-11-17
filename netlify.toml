@@ -1,0 +1,24 @@
+[build]
+  command = "npm run build"
+  publish = "dist/public"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[functions]
+  external_node_modules = ["express", "@neondatabase/serverless", "drizzle-orm"]
+  node_bundler = "esbuild"
+
+# Redirect API calls to serverless function
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
+
+# SPA fallback for React Router (wouter)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
