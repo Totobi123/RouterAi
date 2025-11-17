@@ -10,14 +10,19 @@ interface AudioCacheEntry {
 
 class AudioCacheDB {
   private db: IDBDatabase | null = null;
+  private initialized = false;
 
   async init(): Promise<void> {
+    if (this.initialized) return;
+    
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
         this.db = request.result;
+        this.initialized = true;
+        this.cleanOldEntries().catch(err => console.error('Failed to clean old audio cache:', err));
         resolve();
       };
 

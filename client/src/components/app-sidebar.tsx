@@ -99,7 +99,7 @@ export function AppSidebar({ currentSessionId, onSessionSelect, onNewChat }: App
                       layout
                     >
                       <SidebarMenuItem>
-                        <div className="flex items-center gap-2 w-full">
+                        <div className="flex items-center gap-2 w-full group">
                           <SidebarMenuButton
                             onClick={() => onSessionSelect(session.id)}
                             isActive={currentSessionId === session.id}
