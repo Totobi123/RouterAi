@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { motion } from "framer-motion";
 import { audioCache } from "@/lib/audioCache";
+import CodeBlock from "@/components/CodeBlock";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -151,12 +152,16 @@ export default function ChatMessage({ role, content, messageId, audioBase64, ses
                 ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-2" {...props} />,
                 ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2" {...props} />,
                 li: ({node, ...props}) => <li className="mb-1" {...props} />,
-                code: ({node, className, children, ...props}: any) => {
+                code: ({node, inline, className, children, ...props}: any) => {
+                  if (inline) {
+                    return <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props}>{children}</code>;
+                  }
+                  
                   const match = /language-(\w+)/.exec(className || '');
-                  const inline = !match;
-                  return inline ? 
-                    <code className="bg-muted px-1 py-0.5 rounded text-sm" {...props}>{children}</code> : 
-                    <code className="block bg-muted p-2 rounded text-sm overflow-x-auto" {...props}>{children}</code>;
+                  const language = match ? match[1] : undefined;
+                  const code = String(children).replace(/\n$/, '');
+                  
+                  return <CodeBlock language={language} inline={false}>{code}</CodeBlock>;
                 },
               }}
             >
