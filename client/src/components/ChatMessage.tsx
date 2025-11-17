@@ -1,10 +1,12 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Bot, User, Volume2 } from "lucide-react";
+import { Bot, User, Volume2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { motion } from "framer-motion";
+import { audioCache } from "@/lib/audioCache";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -17,17 +19,28 @@ interface ChatMessageProps {
 export default function ChatMessage({ role, content, messageId, audioBase64, sessionId }: ChatMessageProps) {
   const isUser = role === "user";
   const [isPlaying, setIsPlaying] = useState(false);
-  const [cachedAudio, setCachedAudio] = useState(audioBase64);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [cachedAudio, setCachedAudio] = useState<string | null>(audioBase64 || null);
   const { toast } = useToast();
 
-  const handlePlayAudio = async () => {
-    if (isPlaying) return;
+  useEffect(() => {
+    if (messageId && !cachedAudio) {
+      audioCache.get(messageId).then(audio => {
+        if (audio) {
+          setCachedAudio(audio);
+        }
+      }).catch(err => console.error('Failed to load cached audio:', err));
+    }
+  }, [messageId, cachedAudio]);
 
-    setIsPlaying(true);
+  const handlePlayAudio = async () => {
+    if (isPlaying || isGenerating) return;
+
     try {
       let audioData = cachedAudio;
       
       if (!audioData) {
+        setIsGenerating(true);
         const response = await fetch("/api/tts", {
           method: "POST",
           headers: {
@@ -46,12 +59,19 @@ export default function ChatMessage({ role, content, messageId, audioBase64, ses
         const data = await response.json();
         audioData = data.audioBase64;
         setCachedAudio(audioData);
+        
+        if (messageId && audioData) {
+          await audioCache.set(messageId, audioData);
+        }
+        
+        setIsGenerating(false);
       }
 
       if (!audioData) {
         throw new Error("No audio data available");
       }
 
+      setIsPlaying(true);
       const audioBlob = await fetch(
         `data:audio/mp3;base64,${audioData}`
       ).then((r) => r.blob());
@@ -78,6 +98,7 @@ export default function ChatMessage({ role, content, messageId, audioBase64, ses
     } catch (error) {
       console.error("Error playing audio:", error);
       setIsPlaying(false);
+      setIsGenerating(false);
       toast({
         title: "Error",
         description: "Failed to generate or play audio",
@@ -87,20 +108,32 @@ export default function ChatMessage({ role, content, messageId, audioBase64, ses
   };
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
       className={`flex gap-4 ${isUser ? "justify-end" : "justify-start"}`}
       data-testid={`message-${role}`}
     >
       {!isUser && (
-        <Avatar className="w-8 h-8 flex-shrink-0" data-testid="avatar-ai">
-          <AvatarFallback className="bg-primary text-primary-foreground">
-            <Bot className="w-4 h-4" />
-          </AvatarFallback>
-        </Avatar>
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+        >
+          <Avatar className="w-8 h-8 flex-shrink-0" data-testid="avatar-ai">
+            <AvatarFallback className="bg-primary text-primary-foreground">
+              <Bot className="w-4 h-4" />
+            </AvatarFallback>
+          </Avatar>
+        </motion.div>
       )}
       
       <div className="flex flex-col gap-2">
-        <div
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.15, duration: 0.2 }}
           className={`rounded-2xl px-4 py-3 ${
             isUser
               ? "bg-primary text-primary-foreground max-w-[80%]"
@@ -130,30 +163,53 @@ export default function ChatMessage({ role, content, messageId, audioBase64, ses
               {content}
             </ReactMarkdown>
           </div>
-        </div>
+        </motion.div>
         
         {!isUser && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handlePlayAudio}
-            disabled={isPlaying}
-            className="w-fit"
-            data-testid="button-play-audio"
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
           >
-            <Volume2 className="w-4 h-4 mr-2" />
-            {isPlaying ? "Playing..." : "Play Audio"}
-          </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handlePlayAudio}
+              disabled={isPlaying || isGenerating}
+              className="w-fit hover-elevate active-elevate-2"
+              data-testid="button-play-audio"
+            >
+              {isGenerating ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : isPlaying ? (
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ repeat: Infinity, duration: 1 }}
+                >
+                  <Volume2 className="w-4 h-4 mr-2" />
+                </motion.div>
+              ) : (
+                <Volume2 className="w-4 h-4 mr-2" />
+              )}
+              {isGenerating ? "Generating..." : isPlaying ? "Playing..." : cachedAudio ? "Play Audio" : "Generate Audio"}
+            </Button>
+          </motion.div>
         )}
       </div>
 
       {isUser && (
-        <Avatar className="w-8 h-8 flex-shrink-0" data-testid="avatar-user">
-          <AvatarFallback className="bg-secondary text-secondary-foreground">
-            <User className="w-4 h-4" />
-          </AvatarFallback>
-        </Avatar>
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+        >
+          <Avatar className="w-8 h-8 flex-shrink-0" data-testid="avatar-user">
+            <AvatarFallback className="bg-secondary text-secondary-foreground">
+              <User className="w-4 h-4" />
+            </AvatarFallback>
+          </Avatar>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }
