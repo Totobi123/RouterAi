@@ -200,8 +200,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("OpenRouter API error:", response.status, JSON.stringify(errorData, null, 2));
         return res.status(response.status).json({ 
-          error: errorData.error?.message || "Failed to get AI response" 
+          error: errorData.error?.message || errorData.error || errorData.message || "Failed to get AI response" 
         });
       }
 
