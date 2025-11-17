@@ -83,7 +83,7 @@ class AudioCacheDB {
     });
   }
 
-  async cleanOldEntries(maxAge: number = 7 * 24 * 60 * 60 * 1000): Promise<void> {
+  async cleanOldEntries(maxAge: number = 30 * 24 * 60 * 60 * 1000): Promise<void> {
     if (!this.db) await this.init();
     
     return new Promise((resolve, reject) => {
