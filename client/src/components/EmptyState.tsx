@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react";
+import { Terminal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
@@ -7,10 +7,10 @@ interface EmptyStateProps {
 }
 
 const suggestions = [
-  "Explain quantum computing simply",
-  "Write a haiku about coding",
-  "What are the benefits of exercise?",
-  "Suggest a healthy breakfast recipe",
+  "Explain SQL injection techniques",
+  "How to secure a web application",
+  "What are common penetration testing tools?",
+  "Explain cryptographic hashing algorithms",
 ];
 
 const container = {
@@ -40,7 +40,7 @@ export default function EmptyState({ onSuggestionClick }: EmptyStateProps) {
     >
       <div className="max-w-2xl text-center space-y-6">
         <motion.div 
-          className="inline-flex p-4 rounded-2xl bg-primary/10"
+          className="inline-flex p-4 rounded bg-primary/10 border border-primary/30"
           initial={{ scale: 0, rotate: -180 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ 
@@ -52,15 +52,15 @@ export default function EmptyState({ onSuggestionClick }: EmptyStateProps) {
         >
           <motion.div
             animate={{ 
-              rotate: [0, 5, -5, 0],
+              opacity: [0.5, 1, 0.5],
             }}
             transition={{
-              duration: 3,
+              duration: 2,
               repeat: Infinity,
               ease: "easeInOut"
             }}
           >
-            <Sparkles className="w-12 h-12 text-primary" />
+            <Terminal className="w-12 h-12 text-primary" />
           </motion.div>
         </motion.div>
         
@@ -70,11 +70,14 @@ export default function EmptyState({ onSuggestionClick }: EmptyStateProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <h1 className="text-2xl font-semibold text-foreground">
-            Chat with Sone
+          <h1 className="text-2xl font-bold text-primary font-mono">
+            [ SONE TERMINAL v2.1 ]
           </h1>
-          <p className="text-muted-foreground">
-            Darkest gpt made by Genx !
+          <p className="text-muted-foreground font-mono text-sm">
+            {"> "}Secure Neural Interface • Powered by DeepSeek
+          </p>
+          <p className="text-primary/60 font-mono text-xs">
+            System Status: <span className="text-primary">ONLINE</span> • Encryption: AES-256
           </p>
         </motion.div>
 

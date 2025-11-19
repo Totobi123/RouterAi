@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Terminal } from "lucide-react";
 import ChatMessage from "@/components/ChatMessage";
 import ChatInput from "@/components/ChatInput";
 import LoadingIndicator from "@/components/LoadingIndicator";
 import EmptyState from "@/components/EmptyState";
-import ThemeToggle from "@/components/ThemeToggle";
 import ScrollToTop from "@/components/ScrollToTop";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -232,17 +231,26 @@ export default function Home() {
       />
       <div className="flex flex-col flex-1">
         <motion.header 
-          className="flex items-center justify-between px-6 py-4 border-b" 
+          className="flex items-center justify-between px-6 py-4 border-b border-primary/20 bg-card/50 backdrop-blur" 
           data-testid="header"
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
-            <h1 className="text-xl font-semibold">AI Chat</h1>
+            <Terminal className="w-5 h-5 text-primary" />
+            <div>
+              <h1 className="text-base font-bold text-primary font-mono">[ SONE TERMINAL ]</h1>
+              <p className="text-xs text-muted-foreground font-mono">{"> "}neural.interface.active</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-muted-foreground">
+              <span className="px-2 py-1 bg-primary/10 border border-primary/30 rounded">
+                STATUS: <span className="text-primary">ONLINE</span>
+              </span>
+            </div>
             <AnimatePresence>
               {messages.length > 0 && (
                 <motion.div
@@ -262,7 +270,6 @@ export default function Home() {
                 </motion.div>
               )}
             </AnimatePresence>
-            <ThemeToggle />
           </div>
         </motion.header>
 

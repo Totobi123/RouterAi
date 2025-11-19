@@ -2,6 +2,50 @@ import { Router } from "express";
 import { storage } from "./storage";
 import { insertChatSessionSchema, insertMessageSchema, insertSettingsSchema } from "@shared/schema";
 import { z } from "zod";
+import { createHmac, randomBytes, timingSafeEqual } from "crypto";
+
+const TOKEN_SECRET = process.env.TOKEN_SECRET || randomBytes(32).toString('hex');
+
+function createAuthToken(): string {
+  const payload = JSON.stringify({
+    authenticated: true,
+    timestamp: Date.now(),
+    nonce: randomBytes(16).toString('hex')
+  });
+  const signature = createHmac('sha256', TOKEN_SECRET).update(payload).digest('hex');
+  return Buffer.from(`${payload}.${signature}`).toString('base64');
+}
+
+function verifyAuthToken(token: string): boolean {
+  try {
+    const decoded = Buffer.from(token, 'base64').toString();
+    const [payloadStr, signature] = decoded.split('.');
+    
+    if (!payloadStr || !signature) return false;
+    
+    const expectedSignature = createHmac('sha256', TOKEN_SECRET).update(payloadStr).digest('hex');
+    
+    if (signature.length !== expectedSignature.length) return false;
+    
+    const signatureBuffer = Buffer.from(signature, 'hex');
+    const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+    
+    if (!timingSafeEqual(signatureBuffer, expectedBuffer)) return false;
+    
+    const payload = JSON.parse(payloadStr);
+    if (!payload.authenticated) return false;
+    
+    if (typeof payload.timestamp !== 'number' || !isFinite(payload.timestamp)) return false;
+    
+    const now = Date.now();
+    const hourInMs = 60 * 60 * 1000;
+    if (now - payload.timestamp > 24 * hourInMs) return false;
+    
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export function createApiRouter() {
   const router = Router();
@@ -174,6 +218,48 @@ export function createApiRouter() {
       }
       console.error("Update settings error:", error);
       res.status(500).json({ error: "Failed to update settings" });
+    }
+  });
+
+  router.post("/authenticate", async (req, res) => {
+    try {
+      const { password } = req.body;
+      
+      if (!password || typeof password !== "string") {
+        return res.status(400).json({ error: "Password is required" });
+      }
+
+      const validPassword = process.env.ACCESS_PASSWORD || "titobilove";
+      
+      if (password === validPassword) {
+        const token = createAuthToken();
+        res.json({ success: true, token });
+      } else {
+        res.status(401).json({ error: "Invalid password", success: false });
+      }
+    } catch (error) {
+      console.error("Authentication error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  router.post("/verify-token", async (req, res) => {
+    try {
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(401).json({ valid: false });
+      }
+
+      const isValid = verifyAuthToken(token);
+      if (isValid) {
+        return res.json({ valid: true });
+      }
+      
+      res.status(401).json({ valid: false });
+    } catch (error) {
+      console.error("Token verification error:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
