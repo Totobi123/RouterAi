@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import serverless from "serverless-http";
-import { createApiRouter } from "../../server/api-routes.js";
+import { createApiRouter } from "../server/api-routes.js";
 
 const app = express();
 
@@ -12,7 +12,12 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
-app.use("/api", createApiRouter());
+app.use((req, _res, next) => {
+  req.url = req.url.replace(/^\/api(?![^/])/, "") || "/";
+  next();
+});
+
+app.use("/", createApiRouter());
 
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   const status = err.status || err.statusCode || 500;
@@ -20,4 +25,4 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   res.status(status).json({ message });
 });
 
-export const handler = serverless(app);
+export default serverless(app);
