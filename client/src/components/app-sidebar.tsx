@@ -116,7 +116,7 @@ export function AppSidebar({ currentSessionId, onSessionSelect, onNewChat }: App
                             variant="ghost"
                             size="icon"
                             onClick={(e) => handleDelete(e, session.id)}
-                            className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="flex-shrink-0 opacity-70 group-hover:opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                             data-testid={`button-delete-${session.id}`}
                           >
                             <Trash2 className="w-4 h-4" />

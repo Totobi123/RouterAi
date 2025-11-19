@@ -231,22 +231,22 @@ export default function Home() {
       />
       <div className="flex flex-col flex-1">
         <motion.header 
-          className="flex items-center justify-between px-6 py-4 border-b border-primary/20 bg-card/50 backdrop-blur" 
+          className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 border-b border-primary/20 bg-card/50 backdrop-blur" 
           data-testid="header"
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
-            <Terminal className="w-5 h-5 text-primary" />
-            <div>
-              <h1 className="text-base font-bold text-primary font-mono">[ SONE TERMINAL ]</h1>
-              <p className="text-xs text-muted-foreground font-mono">{"> "}neural.interface.active</p>
+            <Terminal className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-base font-bold text-primary font-mono truncate">[ SONE TERMINAL ]</h1>
+              <p className="text-xs text-muted-foreground font-mono hidden sm:block">{"> "}neural.interface.active</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-muted-foreground">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            <div className="hidden md:flex items-center gap-2 text-xs font-mono text-muted-foreground">
               <span className="px-2 py-1 bg-primary/10 border border-primary/30 rounded">
                 STATUS: <span className="text-primary">ONLINE</span>
               </span>
@@ -264,6 +264,7 @@ export default function Home() {
                     size="icon"
                     onClick={handleNewChat}
                     data-testid="button-clear"
+                    className="min-h-11 min-w-11"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -282,7 +283,7 @@ export default function Home() {
               className="flex-1 overflow-y-auto scroll-smooth" 
               data-testid="messages-container"
             >
-              <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+              <div className="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-3 sm:space-y-4">
                 {dbMessages.map((message) => (
                   <ChatMessage
                     key={message.id}

@@ -9,6 +9,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
+import { useLocation } from "wouter";
 
 export default function Settings() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
@@ -19,6 +20,7 @@ export default function Settings() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -66,6 +68,11 @@ export default function Settings() {
         title: "Settings saved",
         description: "Your API keys have been updated successfully.",
       });
+      
+      // Redirect to home page after successful save
+      setTimeout(() => {
+        setLocation("/");
+      }, 1000);
     } catch (error) {
       console.error("Save settings error:", error);
       toast({
@@ -112,20 +119,20 @@ export default function Settings() {
       />
       <div className="flex flex-col flex-1">
         <motion.header 
-          className="flex items-center justify-between px-6 py-4 border-b"
+          className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 border-b"
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.3 }}
         >
           <div className="flex items-center gap-2">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
-            <h1 className="text-xl font-semibold">Settings</h1>
+            <h1 className="text-lg sm:text-xl font-semibold">Settings</h1>
           </div>
           <ThemeToggle />
         </motion.header>
 
         <main className="flex-1 overflow-y-auto">
-          <div className="container max-w-2xl mx-auto px-4 py-8">
+          <div className="container max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

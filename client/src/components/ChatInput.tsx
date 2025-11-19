@@ -36,7 +36,7 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
       animate={{ y: 0, opacity: 1 }}
       transition={{ delay: 0.2 }}
     >
-      <div className="px-4 py-6 max-w-3xl mx-auto">
+      <div className="px-3 py-3 sm:px-4 sm:py-6 max-w-3xl mx-auto">
         <motion.div 
           className="relative"
           animate={{ 
@@ -50,8 +50,8 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
             onKeyDown={handleKeyDown}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder="Type your message... (Shift+Enter for new line)"
-            className="min-h-12 max-h-32 pr-12 resize-none rounded-xl transition-shadow duration-200"
+            placeholder="Type your message..."
+            className="min-h-12 max-h-32 pr-12 resize-none rounded-xl transition-shadow duration-200 text-base"
             disabled={disabled}
             data-testid="input-message"
             autoFocus
